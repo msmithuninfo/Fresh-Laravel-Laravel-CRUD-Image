@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="refresh" content="3">
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Laravel Information</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="fullcontainer">
+<p>প্রথমে প্রজেক্ট তৈরি করব</p>
+<p>composer create-project --prefer-dist laravel/laravel projectName</p>
+<p>xampp এর মাধ্যমে একটি ডাটাবেজ তৈরি করব</p>
+<p>.env ফাইল এর মধ্যে ডাটাবেজ নেম দিয়ে দিব</p>
+<p>একটি মডেল তৈরি করে নিতে হবে মডেল তৈরি এর সাথে সাথে মাইগ্রেশন তৈরি হবে</p>
+<p>php artisan make:model Student -m</p>
+<p>Database=>migrations=>studentsTable</p>
+<p>মাইগ্রেশন থেকে আমি যে টেবিলটি তৈরি করেছি তাতে আমার জা জা ইনপুট ফিল্ড দরকার তা তা দিয়ে দিব</p>
+<p>
+	use Illuminate\Database\Migrations\Migration; <br>
+	use Illuminate\Database\Schema\Blueprint; <br>
+	use Illuminate\Support\Facades\Schema; <br>
+
+	public function up() <br>
+    { <br>
+        Schema::create('students', function (Blueprint $table) {<br>
+            $table->id();<br>
+            $table->string('name');<br>
+            $table->string('course');<br>
+            $table->string('image');<br>
+            $table->timestamps();<br>
+        });<br>
+    }<br>
+
+</p>
+<p>মাইগ্রেশন টেবিলে যা যা ইনপুট ফিল্ড নিলাম তা মডেলের মধ্যে বলে দিতে হবে</p>
+<p>APP=>Models=>Student.php</p>
+<p>
+	namespace App\Models; <br>
+
+	use Illuminate\Database\Eloquent\Factories\HasFactory; <br>
+	use Illuminate\Database\Eloquent\Model; <br>
+
+	class Student extends Model <br>
+	{ <br>
+		use HasFactory; <br>
+		protected $table = 'students'; <br>
+		protected $fillable = [ <br>
+			'name', <br>
+			'course', <br>
+			'image' <br>
+		]; <br>
+	} <br>
+</p>
+<p>এখন মাইগ্রেট করে নিতে হবে</p>
+<p>php artisan migrate</p>
+<p>এখন কন্ট্রোলার তৈরি করে নিতে হবে</p>
+<p>php artisan make:controller StudentController -r</p>
+<p>-r এর মানে রিসোর্স সহ তৈরি হবে</p>
+<p>কন্ট্রোলার তৈরির পর Route তৈরি করে নেব</p>
+<p>routes folder => web.php তে Route তৈরি করব</p>
+<p>
+	use Illuminate\Support\Facades\Route; <br>
+	use App\Http\Controllers\StudentController;<br>
+
+	Route::get('/students', [StudentController::class, 'index']);<br>
+	Route::get('/add-student', [StudentController::class, 'create']);<br>
+	Route::post('/add-student', [StudentController::class, 'store']);<br>
+	Route::get('/edit-student/{id}', [StudentController::class, 'edit']);<br>
+	Route::put('/update-student/{id}', [StudentController::class, 'update']);<br>
+	Route::get('/delete-student/{id}', [StudentController::class, 'destroy']);<br>
+</p>
+<p>route তৈরি করার পর যে StudentController তৈরি করেছি তাতে কাজ করব</p>
+<p>
+	StudentController  এর মধ্যে return view তে যা যা দিব সেই অনুযায়ী resources=>views
+	ফোল্ডারের মধ্যে ফোল্ডার ক্রিয়েট করে এবং ফাইল ক্রিয়েট করে কাজ করব
+</p>
+<p>***StudentController***</p>
+<p>
+	namespace App\Http\Controllers;<br>
+
+	use Illuminate\Http\Request;<br>
+	use App\Models\Student;<br>
+
+	ইমেজ ডিলেট করার জন্য এইটা যোগ করে নিতে হবে<br>
+	use Illuminate\Support\Facades\File;<br>
+</p>
+<p>
+	public function index()<br>
+    {<br>
+        $students = Student::all();<br>
+        return view('students.index', ['students'=>$students]);<br>
+        //return view('students.index', compact('students'));<br>
+    }<br>
+</p>
+<p>
+	public function create() <br>
+    {<br>
+        return view('students.create');<br>
+    }<br>
+</p>
+<p>
+	public function store(Request $request) <br>
+    {<br>
+        $student = new Student;<br>
+        $student->name = $request->name; <br>
+        $student->course = $request->course;<br>
+
+        if($request->hasfile('image')){<br>
+            $file = $request->file('image');<br>
+            $extention = $file->getClientOriginalExtension();<br>
+            $filename = time().'.'.$extention;<br>
+            $file->move('uploads/students', $filename);<br>
+            $student->image = $filename;<br>
+        }<br>
+        $student->save();<br>
+        return redirect()->back()->with('status','Student Added Successfully.');<br>
+    }<br>
+</p>
+
+<p>
+	public function edit($id) <br>
+    {<br>
+        $student = Student::find($id);<br>
+        return view('students.edit',['student'=>$student]);<br>
+        // Student Model ar modde id find korbo<br>
+
+    }<br>
+</p>
+
+<p>
+	public function update(Request $request, $id) <br>
+    {<br>
+        $student = Student::find($id);<br>
+        $student->name = $request->name; <br>
+        $student->course = $request->course;<br>
+
+        if($request->hasfile('image')){<br>
+            //Start Ager Image Delete korar jonno<br>
+            $destination = 'uploads/students/'.$student->image;<br>
+            if(File::exists($destination)){<br>
+                File::delete($destination);<br>
+            }<br>
+            //End Ager Image Delete korar jonno<br>
+
+            $file = $request->file('image');<br>
+            $extention = $file->getClientOriginalExtension();<br>
+            $filename = time().'.'.$extention;<br>
+            $file->move('uploads/students', $filename);<br>
+            $student->image = $filename;<br>
+        }<br>
+        $student->update();<br>
+        return redirect()->back()->with('status','Student Updated Successfully.');<br>
+    }<br>
+</p>
+
+<p>
+	public function destroy($id) <br>
+    { <br>
+        $student = Student::find($id); <br>
+
+        $destination = 'uploads/students/'.$student->image; <br>
+            if(File::exists($destination)){ <br>
+                File::delete($destination); <br>
+            } <br>
+        $student->delete(); <br>
+        return redirect()->back()->with('status','Student Deleted Successfully.'); <br>
+
+    } <br>
+</p>
+
+<p>*** Bootstrap Link ***</p>
+<p>
+	For Head <br>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css"> <br>
+	For Body  <br>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/js/bootstrap.bundle.min.js"></script> <br>
+</p>
+<div class="create-blade-php">
+	<p>
+		<div class="container"> <br>
+			<div class="row justify-content-center"> <br>
+				<div class="col-md-6"> <br>
+					<div class="card"> <br>
+					@if (session('status')) <br>
+					<h6 class="alert alert-success">{{ session('status') }}</h6> <br>
+					@endif <br>
+						<div class="card-header"> <br>
+							<h4> <br>
+								Add Student With IMAGE <br>
+								<a href="{{ url('students') }}" class="btn btn-danger float-end">Back</a> <br>
+							</h4> <br>
+						</div> <br>
+						<div class="card-body"> <br>
+							<form action="{{ url('add-student') }}" method="POST" enctype="multipart/form-data"> <br>
+								@csrf  <br>
+								<div class="form-group mb-3"> <br>
+									<label for="">Student Name</label> <br>
+									<input type="text" name="name" class="form-control"> <br>
+								</div> <br>
+								<div class="form-group mb-3"> <br>
+									<label for="">Student Course</label> <br>
+									<input type="text" name="course" class="form-control"> <br>
+								</div> <br>
+								<div class="form-group mb-3"> <br>
+									<label for="">Student Profile Image</label> <br>
+									<input type="file" name="image" class="form-control"> <br>
+								</div> <br>
+								<div class="form-group mb-3"> <br>
+									<button type="submit" class="btn btn-primary">Save Student</button> <br>
+								</div> <br>
+							</form> <br>
+						</div> <br>
+					</div> <br>
+				</div> <br>
+			</div> <br>
+		</div> <br>
+	</p>
+</div>
+<div class="edit-blade-php">
+	<p>
+		<div class="container"> <br>
+			<div class="row justify-content-center"> <br>
+				<div class="col-md-6"> <br>
+					<div class="card"> <br>
+					@if (session('status')) <br>
+					<h6 class="alert alert-success">{{ session('status') }}</h6> <br>
+					@endif <br>
+						<div class="card-header"> <br>
+							<h4> <br>
+								Edit Student With IMAGE <br>
+								<a href="{{ url('students') }}" class="btn btn-danger float-end">Back</a> <br>
+							</h4> <br>
+						</div> <br>
+						<div class="card-body"> <br>
+							<form action="{{ url('update-student/'.$student->id) }}" method="POST" enctype="multipart/form-data"> <br>
+								@csrf  <br>
+								@method('PUT') <br>
+								<div class="form-group mb-3"> <br>
+									<label for="">Student Name</label> <br>
+									<input type="text" name="name" class="form-control" value="{{$student->name}}"> <br>
+								</div> <br>
+								<div class="form-group mb-3"> <br>
+									<label for="">Student Course</label> <br>
+									<input type="text" name="course" class="form-control" value="{{$student->course}}"> <br>
+								</div> <br>
+								<div class="form-group mb-3"> <br>
+									<label for="">Student Profile Image</label> <br>
+									<input type="file" name="image" class="form-control"> <br>
+									<img src="{{ asset('uploads/students/'.$student->image) }}" width="70px" height="70px" alt="Image"> <br>
+								</div> <br>
+								<div class="form-group mb-3"> <br>
+									<button type="submit" class="btn btn-primary">Update Student</button> <br>
+								</div> <br>
+							</form> <br>
+						</div> <br>
+					</div> <br>
+				</div> <br>
+			</div> <br>
+		</div> <br>
+	</p>
+</div>
+<div class="index-blade-php">
+	<p>
+		<div class="container"> <br>
+			<div class="row"> <br>
+				<div class="col-md-12"> <br>
+					<div class="card"> <br>
+	
+	
+					@if (session('status')) <br>
+					<h6 class="alert alert-success">{{ session('status') }}</h6> <br>
+					@endif <br>
+	
+					
+						<div class="card-header"> <br>
+							<h4> <br>
+								Laravel 8 Image CRUD <br>
+								<a href="{{ url('add-student') }}" class="btn btn-primary float-end">Add Student</a> <br>
+								<!-- oporer link a click korle add-student ai link a chole jabe --> <br>
+							</h4> <br>
+						</div> <br>
+						<div class="card-body"> <br>
+							<table class="table table-bordered table-striped"> <br>
+								<thead> <br>
+									<tr> <br>
+										<th>ID</th> <br>
+										<th>Name</th> <br>
+										<th>Course</th> <br>
+										<th>Image</th> <br>
+										<th>Edit</th> <br>
+										<th>Delete</th> <br>
+									</tr> <br>
+								</thead> <br>
+								<tbody> <br>
+									@foreach ($students as $item) <br>
+									<tr> <br>
+										<td>{{ $item->id }}</td> <br>
+										<td>{{ $item->name }}</td> <br>
+										<td>{{ $item->course }}</td> <br>
+										<td>
+											<img src="{{ asset('uploads/students/'.$item->image) }}" with="100px" height="70px" alt="Image">
+										</td> <br>
+										<td>
+											<a href="{{ url('edit-student/'.$item->id) }}" class="btn btn-primary btn-sm">Edit</a>
+										</td> <br>
+										<td>
+											<a href="{{ url('delete-student/'.$item->id) }}" class="btn btn-danger btn-sm">Delete</a>
+										</td>
+									</tr> <br>
+									@endforeach <br>
+								</tbody> <br>
+							</table> <br>
+						</div> <br>
+					</div> <br>
+				</div> <br>
+			</div> <br>
+		</div> <br>
+	</p>
+</div>
+
+</div>
+</body>
+</html>
